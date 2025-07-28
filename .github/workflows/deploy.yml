@@ -1,4 +1,4 @@
-name: Deploy to Cloud Run
+name: Deploy frontend to Cloud Run
 
 on:
   push:
@@ -11,7 +11,6 @@ permissions:
 
 jobs:
   deploy:
-    name: Deploy frontend to Cloud Run
     runs-on: ubuntu-latest
 
     steps:
@@ -27,9 +26,22 @@ jobs:
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Build and deploy to Cloud Run
-        uses: google-github-actions/deploy-cloudrun@v2
-        with:
-          service: ${{ secrets.GCP_SERVICE }}
-          region: ${{ secrets.GCP_REGION }}
-          source: .
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/landmark-client-repo/frontend:latest ./client
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/landmark-client-repo/frontend:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ secrets.GCP_SERVICE }} \
+            --image ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/landmark-client-repo/frontend:latest \
+            --region ${{ secrets.GCP_REGION }} \
+            --platform managed \
+            --allow-unauthenticated
