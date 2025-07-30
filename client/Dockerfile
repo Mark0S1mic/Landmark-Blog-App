@@ -8,7 +8,7 @@ RUN npm run build
 
 FROM nginx:stable-alpine
 
-# komentar za test 9
+# komentar za test 10
 # Dodaj custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
